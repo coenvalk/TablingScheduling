@@ -20,6 +20,9 @@ class AvailableTimes:
     def SetAvailable(self, day, time):
         self.times_[day][int((time - self.start_).seconds / 1800)] = True
 
+    def SetUnavailable(self, day, time):
+        self.times_[day][int((time - self.start_).seconds / 1800)] = False
+        
     def SetAvailableRange(self, day, start, end):
         T = start
         while T <= end:

@@ -13,3 +13,6 @@ class Member:
 
     def isAvailable(self, day, time):
         return self.times_.isAvailable(day, time)
+
+    def SetUnavailable(self, day, time):
+        self.times_.SetUnavailable(day, time)
