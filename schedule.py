@@ -9,9 +9,9 @@ import csv
 # returns the sum of the deviation from the average for all members
 # NOTE: only determines based on values M (members) and T (current time index)
 def determine_fairness(S, Members, M, T, Bias, at_table):
-    avg = (len(S[M]) + 1) / (len(S) + 1) * at_table
+    avg = len(S[M]) / len(S) * at_table
     D = Bias.copy()
-    for i in range(M + 1):
+    for i in range(len(Members)):
         if not Members[i].n_ in D.keys():
             D[Members[i].n_] = 0
         
@@ -19,11 +19,9 @@ def determine_fairness(S, Members, M, T, Bias, at_table):
         if not S[M][i] == False:
             D[S[M][i]] += 1
 
-    # print(D)
     sum = 0
     for key, value in D.items():
         sum += abs(avg - value)
-    # print(sum)
     return sum
 
 # returns a tuple, with index 0 being the day, index 1 being the time
@@ -65,10 +63,11 @@ def schedule(Members, days, start, end, Bias, at_table):
             S[i][0] = Members[i].n_
         else:
             S[i][0] = S[i-1][0]
+
     # We want to increase by time fast, and by people slowly:
-    for i in range(1, len(Members)):
+    for j in range(1, days * int((end - start).seconds / 1800)):
         # look at stuff per hour, not half hour:
-        for j in range(1, days * int((end - start).seconds / 1800)):
+        for i in range(1, len(Members)):
             if S[i][j] == False: # if already assigned, continue
                 I = index_to_daytime(j, start, end)
                 D = I[0]
@@ -81,7 +80,7 @@ def schedule(Members, days, start, end, Bias, at_table):
                         current = determine_fairness(S, Members, i, j, Bias, at_table)
                         S[i][j] = Members[i].n_
                         now = determine_fairness(S, Members, i, j, Bias, at_table)
-                        if current < now:
+                        if current <= now:
                             S[i][j] = S[i - 1][j]
                 else:
                     S[i][j] = S[i - 1][j]
@@ -137,6 +136,12 @@ def full_schedule(Members, days, start, end, at_table):
         print("")
         T += datetime.timedelta(minutes=30)
 
+    sum = 0
+    for key in sorted(Bias.keys()):
+        print(key + ": " + str(Bias[key] / 2) + "hrs.")
+        sum += Bias[key] / 2
+    print("Total: " + str(sum))
+
     
 def main():
     START = datetime.datetime.now().replace(hour=9, minute=0)
@@ -161,7 +166,7 @@ def main():
                     
                 name = row[0]
                 # TODO: make this possible to accept different times, but good for now I guess
-                START = datetime.datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
+                START = datetime.datetime.now().replace(hour=10, minute=0, second=0, microsecond=0)
                 END = datetime.datetime.now().replace(hour=17, minute=0, second=0, microsecond=0)
 
                 
