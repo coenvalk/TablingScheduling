@@ -8,11 +8,12 @@ import csv
 
 # returns the sum of the deviation from the average for all members
 # NOTE: only determines based on values M (members) and T (current time index)
-def determine_fairness(S, Members, M, T):
-    avg = (T + 1) / (M + 1)
-    D = {}
+def determine_fairness(S, Members, M, T, Bias, at_table):
+    avg = (len(S[M]) + 1) / (len(S) + 1) * at_table
+    D = Bias.copy()
     for i in range(M + 1):
-        D[Members[i].n_] = 0
+        if not Members[i].n_ in D.keys():
+            D[Members[i].n_] = 0
         
     for i in range(T + 1):
         if not S[M][i] == False:
@@ -22,6 +23,7 @@ def determine_fairness(S, Members, M, T):
     sum = 0
     for key, value in D.items():
         sum += abs(avg - value)
+    # print(sum)
     return sum
 
 # returns a tuple, with index 0 being the day, index 1 being the time
@@ -34,7 +36,7 @@ def index_to_daytime(index, start, end):
         
     return(day, time)
 
-def schedule(Members, days, start, end):
+def schedule(Members, days, start, end, Bias, at_table):
     #print("scheduling members:")
     S = []
     for i in range(len(Members)):
@@ -76,9 +78,9 @@ def schedule(Members, days, start, end):
                         S[i][j] = Members[i].n_
                     else:
                         S[i][j] = S[i - 1][j]
-                        current = determine_fairness(S, Members, i, j)
+                        current = determine_fairness(S, Members, i, j, Bias, at_table)
                         S[i][j] = Members[i].n_
-                        now = determine_fairness(S, Members, i, j)
+                        now = determine_fairness(S, Members, i, j, Bias, at_table)
                         if current < now:
                             S[i][j] = S[i - 1][j]
                 else:
@@ -92,6 +94,13 @@ def schedule(Members, days, start, end):
     #for i in range(days):
         #print("Day " + str(i + 1), end="\t")
     #print("")
+
+    for M in S[-1]:
+        if not M == False:
+            if M in Bias.keys():
+                Bias[M] += 1
+            else:
+                Bias[M] =  1
     
     T = start
     while int((end - T).seconds / 1800) > 0:
@@ -105,21 +114,26 @@ def schedule(Members, days, start, end):
         T += datetime.timedelta(minutes=30)
     return S[-1]
 
-def full_schedule(Members, days, start, end):
-    A = schedule(Members, days, start, end)
-    B = schedule(Members, days, start, end)
+def full_schedule(Members, days, start, end, at_table):
+    Bias = {}
+    S = []
+    for i in range(at_table):
+        S.append(schedule(Members, days, start, end, Bias, at_table))
 
     print("\t", end="")
     for i in range(days):
-        print("Day " + str(i + 1), end="\t\t")
+        print("Day " + str(i + 1), end="")
+        for j in range(at_table):
+            print("\t", end="")
     print("")
     
     T = start
     while int((end - T).seconds / 1800) > 0:
         print(T.strftime("%H:%M"), end="\t")
         for i in range(days):
-            print(A[int((T - start).seconds / 1800) + i * int((end - start).seconds / 1800)], end=" ")
-            print(B[int((T - start).seconds / 1800) + i * int((end - start).seconds / 1800)], end="\t")
+            for j in range(at_table):
+                print(S[j][int((T - start).seconds / 1800) + i * int((end - start).seconds / 1800)], end=" ")
+            print("\t", end="")
         print("")
         T += datetime.timedelta(minutes=30)
 
@@ -145,7 +159,6 @@ def main():
                     M = Member(name, available) # create member and availability times
                     Members.append(M)
                     
-                print(row[0])
                 name = row[0]
                 # TODO: make this possible to accept different times, but good for now I guess
                 START = datetime.datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
@@ -159,6 +172,6 @@ def main():
     Members.append(M)
     #schedule(Members, days, START, END)
     #schedule(Members, days, START, END)
-    full_schedule(Members, days, START, END)
+    full_schedule(Members, days, START, END, 2)
 
 main()
