@@ -10,6 +10,6 @@ Partial Credit is the best!
 # Usage
 ``` python3 schedule.py ```
 
-Currently schedule is just a test to see whether the algorithm works as it is
-supposed to, will soon expand program to accept new members, enter available
-times and days, and output the tabling schedule
+Requires a file named `times.csv` with all the names of the members and all
+the times they are available in the working directory. Future developments will crawl scheduling websites
+like whenisgiood.net to get the data automatically from the website.
