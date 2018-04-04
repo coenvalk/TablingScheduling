@@ -19,9 +19,11 @@ def determine_fairness(S, Members, M, T, Bias, at_table):
         if not S[M][i] == False:
             D[S[M][i]] += 1
 
+    print(D)
     sum = 0
     for key, value in D.items():
         sum += abs(avg - value)
+    print(sum)
     return sum
 
 # returns a tuple, with index 0 being the day, index 1 being the time
@@ -37,6 +39,7 @@ def index_to_daytime(index, start, end):
 def schedule(Members, days, start, end, Bias, at_table):
     #print("scheduling members:")
     S = []
+
     for i in range(len(Members)):
         # Members[i].Print()
         # print("")
@@ -64,27 +67,51 @@ def schedule(Members, days, start, end, Bias, at_table):
         else:
             S[i][0] = S[i-1][0]
 
+    B = 2
     # We want to increase by time fast, and by people slowly:
-    for j in range(1, days * int((end - start).seconds / 1800)):
-        # look at stuff per hour, not half hour:
-        for i in range(1, len(Members)):
-            if S[i][j] == False: # if already assigned, continue
-                I = index_to_daytime(j, start, end)
-                D = I[0]
-                T = I[1]
-                if Members[i].isAvailable(D, T):
-                    if S[i - 1][j] == False:
-                        S[i][j] = Members[i].n_
+    for i in range(1, len(Members)):
+        for j in range(1, days * int((end - start).seconds / 1800) - B):
+            empty = True
+            for a in range(B):
+                if S[i][j + a]:
+                    empty = False
+                    break
+            if empty:
+                available = True
+                for a in range(B):
+                    I = index_to_daytime(j + a, start, end)
+                    D = I[0]
+                    T = I[1]
+                    if not Members[i].isAvailable(D, T):
+                        available = False
+                        break
+                if available:
+                    empty = False
+                    for a in range(B):
+                        if not S[i - 1][j + a]:
+                            empty = True
+                            break
+                    if empty:
+                        # make this a thing:
+                        for a in range(B):
+                            S[i][j + a] = Members[i].n_
                     else:
-                        S[i][j] = S[i - 1][j]
-                        current = determine_fairness(S, Members, i, j, Bias, at_table)
-                        S[i][j] = Members[i].n_
-                        now = determine_fairness(S, Members, i, j, Bias, at_table)
+                        # compare to current solution:
+                        for a in range(B):
+                            S[i][j + a] = S[i - 1][j + a]
+                        current = determine_fairness(S, Members, i, j + B, Bias, at_table)
+                        for a in range(B):
+                            S[i][j + a] = Members[i].n_
+                        now = determine_fairness(S, Members, i, j + B, Bias, at_table)
                         if current <= now:
-                            S[i][j] = S[i - 1][j]
+                            # last solution was better....
+                            for a in range(B):
+                                S[i][j + a] = S[i - 1][j + a]
                 else:
-                    S[i][j] = S[i - 1][j]
-
+                    for a in range(B):
+                        S[i][j + a] = S[i - 1][j + a]
+                    
+                                
     # if I did my homework, this should be at least close to the correct solution!
     # print(S[-1])
 
@@ -175,8 +202,6 @@ def main():
 
     M = Member(name, available)
     Members.append(M)
-    #schedule(Members, days, START, END)
-    #schedule(Members, days, START, END)
     full_schedule(Members, days, START, END, 2)
 
 main()
