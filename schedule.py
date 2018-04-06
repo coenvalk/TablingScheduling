@@ -19,11 +19,9 @@ def determine_fairness(S, Members, M, T, Bias, at_table):
         if not S[M][i] == False:
             D[S[M][i]] += 1
 
-    print(D)
     sum = 0
     for key, value in D.items():
         sum += abs(avg - value)
-    print(sum)
     return sum
 
 # returns a tuple, with index 0 being the day, index 1 being the time
@@ -67,50 +65,59 @@ def schedule(Members, days, start, end, Bias, at_table):
         else:
             S[i][0] = S[i-1][0]
 
-    B = 2
     # We want to increase by time fast, and by people slowly:
     for i in range(1, len(Members)):
-        for j in range(1, days * int((end - start).seconds / 1800) - B):
-            empty = True
-            for a in range(B):
-                if S[i][j + a]:
-                    empty = False
-                    break
-            if empty:
-                available = True
-                for a in range(B):
-                    I = index_to_daytime(j + a, start, end)
+        for j in range(1, days * int((end - start).seconds / 1800)):
+            """
+            previous_shift = True
+            if j >= 4:
+                for a in range(4):
+                    if not S[i][j - a - 1] == Members[i].n_:
+                        previous_shift = False
+                        break
+            else:
+                previous_shift = False
+            """
+            if not S[i][j]:
+                startj = j
+                endj = j
+                while endj < days * int((end - start).seconds / 1800) and endj - startj <= 4:
+                    I = index_to_daytime(endj, start, end)
                     D = I[0]
                     T = I[1]
+                    endj += 1
                     if not Members[i].isAvailable(D, T):
-                        available = False
                         break
-                if available:
-                    empty = False
-                    for a in range(B):
-                        if not S[i - 1][j + a]:
-                            empty = True
-                            break
-                    if empty:
-                        # make this a thing:
-                        for a in range(B):
-                            S[i][j + a] = Members[i].n_
-                    else:
-                        # compare to current solution:
+                endj -= 1
+                B = endj - startj
+                empty = False
+                for a in range(endj - startj + 1): # make sure there are no empty shifts left!
+                    if S[i - 1][j + a] == False:
+                        empty = True
+                        break
+                if not empty:    
+                    added = False
+                    for B in range(endj - startj, 1, -1):
+                        # try to add all at once, then remove from end
                         for a in range(B):
                             S[i][j + a] = S[i - 1][j + a]
                         current = determine_fairness(S, Members, i, j + B, Bias, at_table)
                         for a in range(B):
                             S[i][j + a] = Members[i].n_
                         now = determine_fairness(S, Members, i, j + B, Bias, at_table)
-                        if current <= now:
-                            # last solution was better....
-                            for a in range(B):
-                                S[i][j + a] = S[i - 1][j + a]
+                        if current >= now:
+                            # print(S[i])
+                            added = True
+                            for a in range(B, endj - startj):
+                                S[i][j + a] = False
+                            break
+                    if not added:
+                        S[i][j] = S[i - 1][j]
+                        for a in range(1, endj - startj + 1):
+                            S[i][j + a] = False
                 else:
-                    for a in range(B):
-                        S[i][j + a] = S[i - 1][j + a]
-                    
+                    for a in range(endj - startj + 1):
+                        S[i][j + a] = Members[i].n_
                                 
     # if I did my homework, this should be at least close to the correct solution!
     # print(S[-1])
