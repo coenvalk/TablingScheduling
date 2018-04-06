@@ -36,13 +36,14 @@ def index_to_daytime(index, start, end):
 
 def schedule(Members, days, start, end, Bias, at_table):
     #print("scheduling members:")
+    endindex = int(days * (end - start).seconds / 1800)
     S = []
 
     for i in range(len(Members)):
         # Members[i].Print()
         # print("")
         S.append([])
-        for j in range(int(days * (end - start).seconds / 1800)):
+        for j in range(endindex):
             S[i].append(False) # will be possible list and times of people to schedule
             
                 
@@ -67,8 +68,7 @@ def schedule(Members, days, start, end, Bias, at_table):
 
     # We want to increase by time fast, and by people slowly:
     for i in range(1, len(Members)):
-        for j in range(1, days * int((end - start).seconds / 1800)):
-            """
+        for j in range(1, endindex):
             previous_shift = True
             if j >= 4:
                 for a in range(4):
@@ -77,47 +77,65 @@ def schedule(Members, days, start, end, Bias, at_table):
                         break
             else:
                 previous_shift = False
-            """
             if not S[i][j]:
                 startj = j
                 endj = j
-                while endj < days * int((end - start).seconds / 1800) and endj - startj <= 4:
+                while endj < endindex and endj - startj <= 4:
                     I = index_to_daytime(endj, start, end)
                     D = I[0]
                     T = I[1]
-                    endj += 1
                     if not Members[i].isAvailable(D, T):
                         break
+                    else:
+                        endj += 1
                 endj -= 1
-                B = endj - startj
-                empty = False
-                for a in range(endj - startj + 1): # make sure there are no empty shifts left!
-                    if S[i - 1][j + a] == False:
-                        empty = True
-                        break
-                if not empty:    
-                    added = False
-                    for B in range(endj - startj, 1, -1):
-                        # try to add all at once, then remove from end
-                        for a in range(B):
-                            S[i][j + a] = S[i - 1][j + a]
-                        current = determine_fairness(S, Members, i, j + B, Bias, at_table)
-                        for a in range(B):
-                            S[i][j + a] = Members[i].n_
-                        now = determine_fairness(S, Members, i, j + B, Bias, at_table)
-                        if current >= now:
-                            # print(S[i])
-                            added = True
-                            for a in range(B, endj - startj):
-                                S[i][j + a] = False
+                if startj < endj:
+                    I = index_to_daytime(endj, start, end)
+                    D = I[0]
+                    T = I[1]
+                    print(str(D) + ", " + T.strftime("%H:%M") + ": " + Members[i].n_)
+                    assert Members[i].isAvailable(D, T)
+                    B = endj - startj
+                    empty = False
+                    for a in range(endj - startj + 1): # make sure there are no empty shifts left!
+                        if S[i - 1][j + a] == False:
+                            empty = True
                             break
-                    if not added:
-                        S[i][j] = S[i - 1][j]
-                        for a in range(1, endj - startj + 1):
+                    if not empty:    
+                        added = False
+                        for B in range(endj - startj + 1, 1, -1):
+                            # try to add all at once, then remove from end
+                            for a in range(B):
+                                S[i][j + a] = S[i - 1][j + a]
+                            current = determine_fairness(S, Members, i, j + B - 1, Bias, at_table)
+                            for a in range(B):
+                                S[i][j + a] = Members[i].n_
+                            now = determine_fairness(S, Members, i, j + B - 1, Bias, at_table)
+                            if current >= now:
+                                # print(S[i])
+                                added = True
+                                a = B
+                                while j + a < endindex:
+                                    S[i][j + a] = False
+                                    a += 1
+                                break
+                        if not added:
+                            I1 = index_to_daytime(startj, start, end)
+                            D1 = I1[0]
+                            T1 = I1[1]
+                            I2 = index_to_daytime(endj, start, end)
+                            D2 = I2[0]
+                            T2 = I2[1]
+                            for a in range(endj - startj + 1):
+                                S[i][j + a] = S[i - 1][j + a]
+                    else:
+                        for a in range(endj - startj + 1):
+                            S[i][j + a] = Members[i].n_
+                        while j + a < endindex:
                             S[i][j + a] = False
+                            a += 1
                 else:
-                    for a in range(endj - startj + 1):
-                        S[i][j + a] = Members[i].n_
+                    S[i][j] = S[i - 1][j]
                                 
     # if I did my homework, this should be at least close to the correct solution!
     # print(S[-1])
@@ -135,16 +153,16 @@ def schedule(Members, days, start, end, Bias, at_table):
             else:
                 Bias[M] =  1
     
-    T = start
-    while int((end - T).seconds / 1800) > 0:
+    for i in range(endindex):
+        I = index_to_daytime(i, start, end)
+        D = I[0]
+        T = I[1]
         #print(T.strftime("%H:%M"), end="\t")
-        for i in range(days):
-            # print(S[-1][int((T - start).seconds / 1800) + i * int((end - start).seconds / 1800)], end="\t")
-            for M in Members:
-                if S[-1][int((T - start).seconds / 1800) + i * int((end - start).seconds / 1800)] == M.n_:
-                    M.SetUnavailable(i, T)
+        # print(S[-1][int((T - start).seconds / 1800) + i * int((end - start).seconds / 1800)], end="\t")
+        for M in Members:
+            if S[-1][i] == M.n_:
+                M.SetUnavailable(D, T)
         #print("")
-        T += datetime.timedelta(minutes=30)
     return S[-1]
 
 def full_schedule(Members, days, start, end, at_table):
