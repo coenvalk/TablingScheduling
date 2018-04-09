@@ -102,7 +102,7 @@ def schedule(Members, days, start, end, Bias, at_table):
                         break
             else:
                 previous_shift = False
-            if not S[i][j]:
+            if not S[i][j]: # if already occupied, keep moving
                 startj = j
                 endj = j
                 while endj < endindex and endj - startj <= 4:
@@ -118,7 +118,6 @@ def schedule(Members, days, start, end, Bias, at_table):
                     I = index_to_daytime(endj, start, end)
                     D = I[0]
                     T = I[1]
-                    print(str(D) + ", " + T.strftime("%H:%M") + ": " + Members[i].n_)
                     assert Members[i].isAvailable(D, T)
                     B = endj - startj
                     empty = False
@@ -126,9 +125,9 @@ def schedule(Members, days, start, end, Bias, at_table):
                         if S[i - 1][j + a] == False:
                             empty = True
                             break
-                    if not empty:    
+                    if not empty: # if it is not empty, check if it is better.
                         added = False
-                        for B in range(endj - startj + 1, 1, -1):
+                        for B in range(endj - startj + 1, 2, -1):
                             # try to add all at once, then remove from end
                             for a in range(B):
                                 S[i][j + a] = S[i - 1][j + a]
@@ -153,6 +152,9 @@ def schedule(Members, days, start, end, Bias, at_table):
                             T2 = I2[1]
                             for a in range(endj - startj + 1):
                                 S[i][j + a] = S[i - 1][j + a]
+                            while j + a < endindex:
+                                S[i][j + a] = False
+                                a += 1
                     else:
                         for a in range(endj - startj + 1):
                             S[i][j + a] = Members[i].n_
@@ -190,26 +192,34 @@ def schedule(Members, days, start, end, Bias, at_table):
         #print("")
     return S[-1]
 
-def full_schedule(Members, days, start, end, at_table):
+def full_schedule(Members, days, start, end, at_table, outFile):
     Bias = {}
     S = []
     for i in range(at_table):
         S.append(schedule(Members, days, start, end, Bias, at_table))
 
+    outFile.write(",")
     print("\t", end="")
     for i in range(days):
         print("Day " + str(i + 1), end="")
+        outFile.write("Day " + str(i + 1) + ",")
         for j in range(at_table):
             print("\t", end="")
+    outFile.write('\n')
     print("")
     
     T = start
     while int((end - T).seconds / 1800) > 0:
         print(T.strftime("%H:%M"), end="\t")
+        outFile.write(T.strftime("%H:%M") + ",")
         for i in range(days):
             for j in range(at_table):
-                print(S[j][int((T - start).seconds / 1800) + i * int((end - start).seconds / 1800)], end=" ")
+                index = int((T - start).seconds / 1800) + i * int((end - start).seconds / 1800)
+                print(S[j][index], end=" ")
+                outFile.write(str(S[j][index]) + " ")
+            outFile.write(",")
             print("\t", end="")
+        outFile.write('\n')
         print("")
         T += datetime.timedelta(minutes=30)
 
@@ -221,8 +231,8 @@ def full_schedule(Members, days, start, end, at_table):
 
     
 def main():
-    START = datetime.datetime.now().replace(hour=9, minute=0)
-    END = datetime.datetime.now().replace(hour=17, minute=0)
+    START = datetime.datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
+    END = datetime.datetime.now().replace(hour=17, minute=0, second=0, microsecond=0)
 
     Members = []
     available = False # first occurance
@@ -242,16 +252,14 @@ def main():
                     Members.append(M)
                     
                 name = row[0]
-                # TODO: make this possible to accept different times, but good for now I guess
-                START = datetime.datetime.now().replace(hour=10, minute=0, second=0, microsecond=0)
-                END = datetime.datetime.now().replace(hour=17, minute=0, second=0, microsecond=0)
 
                 
                 available = AvailableTimes(START, END, len(row) - 1)
                 days = len(row) - 1
 
-    M = Member(name, available)
-    Members.append(M)
-    full_schedule(Members, days, START, END, 2)
+    with open('outFile.csv', 'w', newline='') as outFile:
+        M = Member(name, available)
+        Members.append(M)
+        full_schedule(Members, days, START, END, 2, outFile)
 
 main()
