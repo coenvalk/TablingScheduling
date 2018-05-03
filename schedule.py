@@ -35,10 +35,13 @@ import csv
 # NOTE: only determines based on values M (members) and T (current time index)
 def determine_fairness(S, Members, M, T, Bias, at_table):
     avg = len(S[M]) / len(S) * at_table
-    D = Bias.copy()
+    D = {}
+    
     for i in range(len(Members)):
         if not Members[i].n_ in D.keys():
             D[Members[i].n_] = 0
+        else:
+            D[Members[i].n_] = Bias[Members[i].n_]
         
     for i in range(T + 1):
         if not S[M][i] == False:
@@ -56,7 +59,7 @@ def index_to_daytime(index, start, end):
         time = start + datetime.timedelta(hours = int((index % ((end - start).seconds / 1800)) / 2))
     else:
         time = start + datetime.timedelta(hours = int((index % ((end - start).seconds / 1800)) / 2), minutes=30)
-        
+
     return(day, time)
 
 def schedule(Members, days, start, end, Bias, at_table):
@@ -95,14 +98,14 @@ def schedule(Members, days, start, end, Bias, at_table):
     for i in range(1, len(Members)):
         for j in range(1, endindex):
             previous_shift = True
-            if j >= 4:
-                for a in range(4):
+            if j >= 2:
+                for a in range(2):
                     if not S[i][j - a - 1] == Members[i].n_:
                         previous_shift = False
                         break
             else:
                 previous_shift = False
-            if not S[i][j]: # if already occupied, keep moving
+            if not S[i][j] and not previous_shift: # if already occupied, keep moving
                 startj = j
                 endj = j
                 while endj < endindex and endj - startj <= 4:
@@ -114,6 +117,8 @@ def schedule(Members, days, start, end, Bias, at_table):
                     else:
                         endj += 1
                 endj -= 1
+
+                assert endj - startj <= 4
                 if startj < endj:
                     I = index_to_daytime(endj, start, end)
                     D = I[0]
@@ -152,17 +157,12 @@ def schedule(Members, days, start, end, Bias, at_table):
                             T2 = I2[1]
                             for a in range(endj - startj + 1):
                                 S[i][j + a] = S[i - 1][j + a]
-                            while j + a < endindex:
-                                S[i][j + a] = False
-                                a += 1
                     else:
                         for a in range(endj - startj + 1):
                             S[i][j + a] = Members[i].n_
-                        while j + a < endindex:
-                            S[i][j + a] = False
-                            a += 1
                 else:
                     S[i][j] = S[i - 1][j]
+                print(str(j) + ": " + str(S[i][j]))
                                 
     # if I did my homework, this should be at least close to the correct solution!
     # print(S[-1])
@@ -231,7 +231,7 @@ def full_schedule(Members, days, start, end, at_table, outFile):
 
     
 def main():
-    START = datetime.datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
+    START = datetime.datetime.now().replace(hour=10, minute=0, second=0, microsecond=0)
     END = datetime.datetime.now().replace(hour=17, minute=0, second=0, microsecond=0)
 
     Members = []
