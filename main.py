@@ -152,11 +152,10 @@ if __name__ == "__main__":
             curr_time = start + datetime.timedelta(minutes=30) * times * (t % slots_per_day)
             row.append(curr_time.strftime("%H:%M"))
             for d in range(days):
-                if d * days + t < len(full_schedule):
-                    string = ""
-                    for s in full_schedule[d * slots_per_day + t]:
-                        string += s + " "
-                    row.append(string)
+                string = ""
+                for s in full_schedule[d * slots_per_day + t]:
+                    string += s + " "
+                row.append(string)
             print row
             C.writerow(row)
         
