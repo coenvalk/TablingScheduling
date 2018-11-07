@@ -154,9 +154,10 @@ if __name__ == "__main__":
             for d in range(days):
                 if d * days + t < len(full_schedule):
                     string = ""
-                    for s in full_schedule[d * days + t]:
+                    for s in full_schedule[d * slots_per_day + t]:
                         string += s + " "
                     row.append(string)
+            print row
             C.writerow(row)
         
     print D
