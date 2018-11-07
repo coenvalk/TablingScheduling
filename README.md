@@ -8,8 +8,7 @@ solution as possible.
 
 Partial Credit is the best!
 # Usage
-``` python3 schedule.py ```
+``` python main.py <available_times.csv> <# of people at table> <length of shift in half hours>```
 
-Requires a file named `times.csv` with all the names of the members and all
-the times they are available in the working directory. Future developments will crawl scheduling websites
+Future developments will crawl scheduling websites
 like whenisgiood.net to get the data automatically from the website.
