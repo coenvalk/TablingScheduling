@@ -33,8 +33,8 @@ def equality(schedule, members, predict = None, itr = 1):
 
     return ret
 
-def schedule_new(days, slots_per_day, members, member_availability, predict = None, itr = 1):
-    N = 100
+def schedule(days, slots_per_day, members, member_availability, predict = None, itr = 1):
+    N = 300
     
     possible_solutions = [[False] * days * slots_per_day]
 
@@ -69,37 +69,6 @@ def schedule_new(days, slots_per_day, members, member_availability, predict = No
                 possible_solutions = next_sols
                 
     return possible_solutions
-
-def schedule_old(days, slots_per_day, members, member_availability):
-    S = []
-    for idx in range(len(members)):
-        S.append([False] * (slots_per_day * days))
-
-    # initial conditions first person takes all they can
-    for idx, t in enumerate(member_availability[0]):
-        if t:
-            S[0][idx] = members[0]
-
-    for M in range(1, len(members)):
-        # check for Falses first...
-        for T in range(days * slots_per_day):
-            if not S[M - 1][T] and member_availability[M][T]:
-                S[M][T] = members[M]
-        
-        for T in range(days * slots_per_day):
-            if member_availability[M][T] and not S[M - 1][T]:
-                S[M][T] = members[M]
-            elif member_availability[M][T]:
-                S[M][T] = S[M - 1][T]
-                without_equal = equality(S[M], members[:M + 1], predict, itr)
-                S[M][T] = members[M]
-                with_equal = equality(S[M], members[:M + 1], predict, itr)
-                if without_equal <= with_equal:
-                    S[M][T] = S[M - 1][T]
-            else:
-                S[M][T] = S[M - 1][T]
-        
-    return S[-1]
 
 if __name__ == "__main__":
     filename = sys.argv[1]
@@ -166,7 +135,7 @@ if __name__ == "__main__":
     S = []
     D = None
     for i in range(at_table):
-        S.append(schedule_new(days, slots_per_day, members, hour_times, D, i + 1)[0])
+        S.append(schedule(days, slots_per_day, members, hour_times, D, i + 1)[0])
 
         D = make_dict(S[-1], members, D)
         for t, m1 in enumerate(S[-1]):
