@@ -113,7 +113,7 @@ if __name__ == "__main__":
         times_available[-1] = [item for sublist in times_available[-1] for item in sublist]
 
     # convert half hours to longer times...
-    slots_per_day /= times
+    slots_per_day //= times
     hour_times = []
     for T in times_available:
         hour_times.append([])
@@ -129,9 +129,9 @@ if __name__ == "__main__":
             
             t += times
             
-    print "Making tabling schedule for the following members:"
-    print members
-    print ""
+    print("Making tabling schedule for the following members:")
+    print(members)
+    print("")
     S = []
     D = None
     for i in range(at_table):
@@ -156,7 +156,7 @@ if __name__ == "__main__":
                 for s in full_schedule[d * slots_per_day + t]:
                     string += s + " "
                 row.append(string)
-            print row
+            print(row)
             C.writerow(row)
         
-    print D
+    print(D)
